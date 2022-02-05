@@ -1,24 +1,7 @@
 defmodule GenReport do
   alias GenReport.Parser
 
-  @months [
-    "janeiro",
-    "fevereiro",
-    "março",
-    "abril",
-    "maio",
-    "junho",
-    "julho",
-    "agosto",
-    "setembro",
-    "outubro",
-    "novembro",
-    "dezembro"
-  ]
-
-  def build() do
-    { :error, "Insira o nome de um arquivo" }
-  end
+  def build(), do: {:error, "Insira o nome de um arquivo"}
 
   def build(file_name) do
     file_name
@@ -28,80 +11,40 @@ defmodule GenReport do
 
   defp generate(list) do
     %{
-      "all_hours" => process_all_hours(list),
-      "hours_per_month" => process_hours_per_month(list),
-      "hours_per_year" => process_hours_per_year(list)
+      "all_hours" => calculate(&sum_all_hours/2, list),
+      "hours_per_month" => calculate(&sum_hours_per_month/2, list),
+      "hours_per_year" => calculate(&sum_hours_per_year/2, list)
     }
   end
 
-  defp get_all_names(list) do
-    list
-    |> Enum.map(&List.first/1)
-    |> Enum.uniq()
-  end
-
-  defp get_all_years(list) do
-    list
-    |> Enum.map(&List.last/1)
-    |> Enum.uniq()
-  end
-
-  defp build_all_months() do
-    Enum.into(@months, %{}, &{&1, 0})
-  end
-
-  defp build_all_years(list) do
-    list
-    |> get_all_years()
-    |> Enum.into(%{}, &{&1, 0})
-  end
-
-  # All Hours
-
-  defp build_all_hours(list) do
-    list
-    |> get_all_names()
-    |> Enum.into(%{}, &{&1, 0})
+  def calculate(fun, list) do
+    Enum.reduce(list, %{}, fn line, acc -> fun.(line, acc) end)
   end
 
   defp sum_all_hours([name, hours, _, _, _], report) do
-    Map.put(report, name, report[name] + hours)
-  end
-
-  defp process_all_hours(list) do
-    report = build_all_hours(list)
-    Enum.reduce(list, report, fn line, acc -> sum_all_hours(line, acc) end)
-  end
-
-  # Hours per month
-
-  defp build_hours_per_month(list) do
-    Enum.into(get_all_names(list), %{}, &{&1, build_all_months()})
+    sum_hours = Map.get(report, name, 0) + hours
+    Map.put(report, name, sum_hours)
   end
 
   defp sum_hours_per_month([name, hours, _, month, _], report) do
-    worker_months = Map.put(report[name], month, report[name][month] + hours)
-    Map.put(report, name, worker_months)
-  end
+    worker_report = Map.get(report, name, %{})
+    month_hours = Map.get(worker_report, month, 0)
 
-  defp process_hours_per_month(list) do
-    report = build_hours_per_month(list)
-    Enum.reduce(list, report, fn line, acc -> sum_hours_per_month(line, acc) end)
-  end
-
-  # Hours per year
-
-  defp build_hours_per_year(list) do
-    Enum.into(get_all_names(list), %{}, &{&1, build_all_years(list)})
+    Map.put(
+      report,
+      name,
+      Map.put(worker_report, month, month_hours + hours)
+    )
   end
 
   defp sum_hours_per_year([name, hours, _, _, year], report) do
-    worker_years = Map.put(report[name], year, report[name][year] + hours)
-    Map.put(report, name, worker_years)
-  end
+    worker_report = Map.get(report, name, %{})
+    year_hours = Map.get(worker_report, year, 0)
 
-  defp process_hours_per_year(list) do
-    report = build_hours_per_year(list)
-    Enum.reduce(list, report, fn line, acc -> sum_hours_per_year(line, acc) end)
+    Map.put(
+      report,
+      name,
+      Map.put(worker_report, year, year_hours + hours)
+    )
   end
 end

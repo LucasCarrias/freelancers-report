@@ -24,14 +24,16 @@ defmodule GenReport.Parser do
     line
     |> String.trim()
     |> String.split(",")
-    |> List.update_at(3, fn value -> @months[value] end)
-    |> List.update_at(0, fn value -> String.downcase(value) end)
-    |> Enum.map(&to_interger/1)
+    |> parse()
   end
 
-  defp is_number?(value), do: String.match?(value, ~r/^[[:digit:]]+$/)
-
-  defp to_interger(value) do
-    if is_number?(value), do: String.to_integer(value), else: value
+  defp parse([name, hours, day, month, year]) do
+    [
+      String.downcase(name),
+      String.to_integer(hours),
+      String.to_integer(day),
+      @months[month],
+      String.to_integer(year)
+    ]
   end
 end
