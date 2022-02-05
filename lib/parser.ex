@@ -26,7 +26,7 @@ defmodule GenReport.Parser do
     |> String.split(",")
     |> List.update_at(3, fn value -> @months[value] end)
     |> List.update_at(0, fn value -> String.downcase(value) end)
-    |> Enum.map(&to_interger(&1))
+    |> Enum.map(&to_interger/1)
   end
 
   defp is_number?(value), do: String.match?(value, ~r/^[[:digit:]]+$/)
