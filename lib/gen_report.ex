@@ -9,6 +9,20 @@ defmodule GenReport do
     |> generate()
   end
 
+
+  def build_from_many(filenames) when not is_list(filenames) do
+    {:error, "Please provide a list of strings"}
+  end
+
+  def build_from_many(filenames) do
+    result =
+      filenames
+      |> Task.async_stream(&build/1)
+      |> Enum.reduce(%{}, fn {:ok, result}, report -> merge(report, result) end)
+
+    {:ok, result}
+  end
+
   defp generate(list) do
     %{
       "all_hours" => calculate(&sum_all_hours/2, list),
@@ -46,5 +60,13 @@ defmodule GenReport do
       name,
       Map.put(worker_report, year, year_hours + hours)
     )
+  end
+
+  defp merge(value1, value2) when is_integer(value1) do
+    value1 + value2
+  end
+
+  defp merge(map1, map2) do
+    Map.merge(map1, map2, fn _key, value1, value2 -> merge(value1, value2) end)
   end
 end
